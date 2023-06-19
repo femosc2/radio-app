@@ -2,20 +2,17 @@ import { GetStaticPaths, GetStaticProps } from "next";
 import Link from "next/link";
 import { getChannel, getPrograms } from "../Utils/http";
 import Image from "next/image";
+import ChannelHeader from "./components/Header";
+import Back from "./components/Back";
 
 const Channel: React.FC = async () => {
   const channel = await getChannel();
   const programs = await getPrograms();
 
-  return channel && programs ? (
+  return (
     <section className="container mx-auto">
-      <header>
-        <img src={channel.image} alt="Channel Image" className="w-24 h-24" />
-        <h1 className="text-3xl mt-4">{channel.tagline}</h1>
-      </header>
-      <Link href="/">
-        <p className="text-pink-500 hover:underline">Go back to Start</p>
-      </Link>
+      <ChannelHeader tagline={channel?.tagline} image={channel?.image} />
+      <Back href={""} />
       <main>
         <ul className="mt-8 space-y-4">
           {programs.map((program) => (
@@ -33,14 +30,13 @@ const Channel: React.FC = async () => {
                   </div>
                 </div>
               </Link>
-              <hr />
+              <hr className="h-px my-8 bg-gray-100 border-0 dark:bg-gray-800" />
             </li>
           ))}
         </ul>
+        <Back href={"Channel"} />
       </main>
     </section>
-  ) : (
-    <p>Loading</p>
   );
 };
 
