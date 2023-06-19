@@ -1,28 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { getChannel, getEpisodes, getPrograms } from "@/app/Utils/http";
 import { IChannel, IEpisode } from "@/app/Types/types";
-import ChannelHeader from "../../components/Header";
-import Back from "../../components/Back";
+import ChannelHeader from "../../../components/Header";
+import Back from "../../../components/Back";
 import { getDate } from "@/app/Utils/regex";
+import Episode from "../../../components/Episode";
+import Loader from "../../../components/Loader";
 
-export default function Episode({ params }: { params: { id: string } }) {
+export default function Episodes({ params }: { params: { id: string } }) {
   const [input, setInput] = useState("");
   const [episodes, setEpisodes] = useState<IEpisode[]>([]);
   const [channel, setChannel] = useState<IChannel | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingFailed, setLoadingFailed] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoadingFailed(false);
+      setIsLoading(true);
       try {
         const episodesData = await getEpisodes(Number(params.id));
         const channelData = await getChannel();
         setEpisodes(episodesData);
         setChannel(channelData);
       } catch (error) {
+        setLoadingFailed(true);
         console.error("Error fetching episodes:", error);
       }
+      setIsLoading(false);
     };
 
     fetchData();
@@ -30,10 +37,6 @@ export default function Episode({ params }: { params: { id: string } }) {
 
   const filteredEpisodes = episodes.filter((episode) => {
     const { title, publishdateutc } = episode;
-    console.log("____");
-    console.log(episode.title);
-    console.log(new Date(getDate(publishdateutc)));
-    console.log("____");
     if (input) {
       const lowercaseFilterText = input.toLowerCase();
       return (
@@ -56,43 +59,39 @@ export default function Episode({ params }: { params: { id: string } }) {
 
   return (
     <section className="container mx-auto">
-      <ChannelHeader tagline={channel?.tagline} image={channel?.image} />
-      <Back href={"Channel"} />
-      <main>
-        <div className="flex justify-end mt-4">
-          <input
-            type="text"
-            placeholder="Filter episodes by title or date"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-800 text-gray-400 rounded-md focus:outline-none focus:border-pink-500 border-1 border-gray-200 border-solid"
-          />
-        </div>
-        <ul className="mt-8 space-y-4">
-          {sortedEpisodes.map((episode) => (
-            <li key={episode.id}>
-              <p className="flex items-center space-x-4">
-                <img
-                  src={episode.imageurl}
-                  alt={episode.title}
-                  className="w-40 h-40"
-                />
-                <div>
-                  <h2 className="text-xl text-white">{episode.title}</h2>
-                  <p className="text-gray-400">{episode.description}</p>
-                  {episode.listenpodfile && (
-                    <audio src={episode.listenpodfile.url} controls />
-                  )}
-                </div>
-              </p>
-              <hr className="h-px my-8 bg-gray-100 border-0 dark:bg-gray-800" />
-            </li>
-          ))}
-        </ul>
-      </main>
-      <footer className="mt-8">
-        <Back href={"Channel"} />
-      </footer>
+      {!isLoading && !loadingFailed ? (
+        <>
+          <ChannelHeader tagline={channel?.tagline} image={channel?.image} />
+          <Back href={"Channel"} />
+          <main>
+            <div className="flex justify-end mt-4">
+              <label htmlFor="input" className="sr-only">
+                Filter
+              </label>
+              <input
+                type="text"
+                id="input"
+                placeholder="Filter episodes by title or date"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 text-gray-400 rounded-md focus:outline-none focus:border-pink-500 border-1 border-gray-200 border-solid"
+              />
+            </div>
+            <ul className="mt-8 space-y-4">
+              {sortedEpisodes.map((episode) => (
+                <Episode key={episode.id} episode={episode} />
+              ))}
+            </ul>
+          </main>
+          <footer className="mt-8">
+            <Back href={"Channel"} />
+          </footer>
+        </>
+      ) : loadingFailed ? (
+        <Loader />
+      ) : (
+        "Loading Failed"
+      )}
     </section>
   );
 }
